@@ -11,11 +11,12 @@ SLOWDNS_DIR="/etc/slowdns"
 SERVER_SERVICE="server-sldns"
 CLIENT_SERVICE="client-sldns"
 PUBKEY_FILE="$SLOWDNS_DIR/server.pub"
+SCRIPT_PATH="/root/darkfull_slowdns_manager.sh"
 
 # Zona horaria Honduras
 TZ="America/Tegucigalpa"
 
-# ---------------- FUNCIONES SLOWDNS ----------------
+# ---------------- FUNCIONES ----------------
 menu(){
 clear
 echo -e "${ORANGE}---------------------------------------------${NC}"
@@ -74,6 +75,7 @@ iptables -t nat -I PREROUTING -p udp --dport 53 -j REDIRECT --to-ports 5300
 netfilter-persistent save
 netfilter-persistent reload
 
+# Crear servicios systemd
 cat > /etc/systemd/system/$CLIENT_SERVICE.service <<EOF
 [Unit]
 Description=Client SlowDNS
@@ -102,9 +104,16 @@ systemctl daemon-reload
 systemctl enable $CLIENT_SERVICE $SERVER_SERVICE
 systemctl start $CLIENT_SERVICE $SERVER_SERVICE
 
+# Crear alias permanente
+if ! grep -q "dkfslowdns" ~/.bashrc; then
+    echo "alias dkfslowdns='$SCRIPT_PATH'" >> ~/.bashrc
+    source ~/.bashrc
+fi
+
 echo -e "${GREEN}[✓] Instalación completada.${NC}"
 echo "NS: $DOMAIN"
 echo "Public Key guardada en $PUBKEY_FILE"
+echo "Ahora puedes ejecutar el script con el comando: dkfslowdns"
 read -rp "Presiona Enter para volver al menú..." 
 menu
 }
@@ -154,6 +163,7 @@ rm -rf $SLOWDNS_DIR
 rm -f /etc/systemd/system/$CLIENT_SERVICE.service
 rm -f /etc/systemd/system/$SERVER_SERVICE.service
 systemctl daemon-reload
+sed -i '/dkfslowdns/d' ~/.bashrc
 echo -e "${RED}[✓] SlowDNS desinstalado.${NC}"
 read -rp "Presiona Enter para volver al menú..." 
 menu
